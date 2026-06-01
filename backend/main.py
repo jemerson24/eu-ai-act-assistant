@@ -21,14 +21,16 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Only mount documents if the directory exists
 DOCUMENTS_PATH = os.path.join(os.path.dirname(__file__), "..", "documents")
-app.mount("/documents", StaticFiles(directory=DOCUMENTS_PATH), name="documents")
+if os.path.exists(DOCUMENTS_PATH):
+    app.mount("/documents", StaticFiles(directory=DOCUMENTS_PATH), name="documents")
 
 app.include_router(query_router)
 app.include_router(classify_router)
