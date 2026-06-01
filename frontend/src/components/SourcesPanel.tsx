@@ -16,7 +16,7 @@ function extractArticle(text: string): string | null {
   return null;
 }
 
-const PDF_URL = "https://storage.googleapis.com/eu-ai-act-pdf/eu_ai_act.pdf"\;
+const PDF_URL = "https://storage.googleapis.com/eu-ai-act-pdf/eu_ai_act.pdf";
 const OFFSET = 1;
 
 export default function SourcesPanel({ sources = [] }: Props) {
