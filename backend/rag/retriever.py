@@ -3,12 +3,11 @@ from langchain_openai import OpenAIEmbeddings
 from qdrant_client import QdrantClient
 
 
-def get_retriever(qdrant_url: str, collection_name: str, k: int = 5):
-    """
-    Returns a LangChain retriever backed by Qdrant.
-    k = number of chunks to retrieve per query.
-    """
-    client = QdrantClient(url=qdrant_url)
+def get_retriever(qdrant_url: str, collection_name: str, k: int = 5, api_key: str = None):
+    client = QdrantClient(
+        url=qdrant_url,
+        api_key=api_key,
+    )
 
     embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 

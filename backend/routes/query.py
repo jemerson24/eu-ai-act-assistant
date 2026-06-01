@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from rag.pipeline import get_qa_chain_with_sources
 from rag.retriever import get_retriever
-from config import QDRANT_URL, QDRANT_COLLECTION
+from config import QDRANT_URL, QDRANT_COLLECTION, QDRANT_API_KEY
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -27,7 +27,7 @@ async def query(request: Request, body: QueryRequest):
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
     try:
-        retriever = get_retriever(QDRANT_URL, QDRANT_COLLECTION)
+        retriever = get_retriever(QDRANT_URL, QDRANT_COLLECTION, api_key=QDRANT_API_KEY)
         qa_chain = get_qa_chain_with_sources(retriever)
         result = qa_chain(body.question)
 
