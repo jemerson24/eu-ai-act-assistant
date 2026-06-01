@@ -24,7 +24,7 @@ export default function ClassifierPanel() {
     if (!description.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/classify-system", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/classify-system`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description }),
