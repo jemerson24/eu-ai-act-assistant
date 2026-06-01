@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from rag.pipeline import get_qa_chain_with_sources
 from rag.retriever import get_retriever
 from config import QDRANT_URL, QDRANT_COLLECTION
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
 class QueryRequest(BaseModel):
@@ -18,14 +21,15 @@ class QueryResponse(BaseModel):
     sources: list[SourceDocument]
 
 @router.post("/query", response_model=QueryResponse)
-async def query(request: QueryRequest):
-    if not request.question.strip():
+@limiter.limit("10/minute")
+async def query(request: Request, body: QueryRequest):
+    if not body.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
     try:
         retriever = get_retriever(QDRANT_URL, QDRANT_COLLECTION)
         qa_chain = get_qa_chain_with_sources(retriever)
-        result = qa_chain(request.question)
+        result = qa_chain(body.question)
 
         sources = [
             SourceDocument(

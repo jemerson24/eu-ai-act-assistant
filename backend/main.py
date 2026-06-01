@@ -1,15 +1,23 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from routes.query import router as query_router
 from routes.classify import router as classify_router
 import os
+
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="EU AI Act Compliance Assistant",
     description="RAG-powered legal assistant for the EU AI Act",
     version="1.0.0",
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,7 +27,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve the PDF as a static file
 DOCUMENTS_PATH = os.path.join(os.path.dirname(__file__), "..", "documents")
 app.mount("/documents", StaticFiles(directory=DOCUMENTS_PATH), name="documents")
 
