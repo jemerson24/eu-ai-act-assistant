@@ -16,16 +16,15 @@ function extractArticle(text: string): string | null {
   return null;
 }
 
+const PDF_URL = "https://storage.googleapis.com/eu-ai-act-pdf/eu_ai_act.pdf"\;
+const OFFSET = 1;
+
 export default function SourcesPanel({ sources = [] }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   function handleClick(page: number, index: number) {
     setActiveIndex(index);
-    const OFFSET = 1;
-    window.open(
-      `http://localhost:8000/documents/eu_ai_act.pdf#page=${page + OFFSET}`,
-      "_blank"
-    );
+    window.open(`${PDF_URL}#page=${page + OFFSET}`, "_blank");
   }
 
   return (
@@ -50,7 +49,7 @@ export default function SourcesPanel({ sources = [] }: Props) {
         </div>
         <div style={{
           fontSize: 10,
-          color: "#1e2530",
+          color: "#334155",
           fontFamily: "'DM Mono', monospace",
           marginTop: 3,
         }}>
