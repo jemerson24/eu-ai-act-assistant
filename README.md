@@ -1,126 +1,121 @@
-# EU AI Act Compliance Assistant
+<div align="center">
 
-A production-grade RAG (Retrieval-Augmented Generation) application that lets compliance officers and developers query the EU AI Act in natural language and get accurate, cited answers grounded in the official legal text.
+# 🏛️ EU AI Act Compliance Assistant
 
-**Live demo:** `https://eu-ai-act-assistant-460016298946.us-central1.run.app`
+**Ask questions about the EU AI Act in plain English. Get cited, accurate answers in seconds.**
 
----
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20App-blue?style=for-the-badge)](https://eu-ai-act-assistant-460016298946.us-central1.run.app)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/jemerson24/eu-ai-act-assistant)
 
-## What it does
+![EU AI Act Assistant](https://storage.googleapis.com/eu-ai-act-pdf/preview.png)
 
-- **Natural language Q&A** — ask anything about the EU AI Act and get a plain-English answer with Article citations
-- **AI system risk classifier** — describe your AI system and get a High / Limited / Minimal risk classification with Annex III references
-- **Clickable source cards** — every answer shows the exact chunks retrieved from the Act, linked to the official PDF at the right page
-- **No API key required** — rate-limited at 10 requests/minute per user
+</div>
 
 ---
 
-## Architecture
+## ✨ What is this?
 
-```
-User (Next.js frontend)
-        │
-        ▼
-FastAPI backend (GCP Cloud Run)
-        │
-   ┌────┴────┐
-   │         │
-   ▼         ▼
-Qdrant    OpenAI
-Cloud     GPT-4o
-(1429     (answer
-chunks)   generation)
-```
+The EU AI Act (August 2024) is a 144-page regulation that applies to every company building AI in or selling to Europe — including enterprises like L'Oréal, Philips, and Lenovo.
 
-**Query flow:**
-1. User submits a question
-2. FastAPI embeds the question via `text-embedding-3-small`
-3. Qdrant returns the top-5 most relevant chunks (cosine similarity)
-4. GPT-4o generates a grounded answer from those chunks
-5. Answer + source documents returned to the frontend
+This tool lets **compliance officers** and **developers** query the Act in natural language instead of manually searching through legal text.
 
----
+### Features
 
-## Tech stack
-
-| Layer | Technology |
+| Feature | Description |
 |---|---|
-| LLM | OpenAI GPT-4o (temperature=0) |
-| Embeddings | text-embedding-3-small (1536 dimensions) |
-| Vector DB | Qdrant Cloud |
-| Orchestration | LangChain |
-| Backend | FastAPI + Python 3.11 |
-| Frontend | Next.js 16 + Tailwind CSS |
-| PDF storage | Google Cloud Storage |
-| Deployment | GCP Cloud Run + Docker |
-| Rate limiting | slowapi (10 req/min per IP) |
+| 💬 **Natural language Q&A** | Ask anything about the EU AI Act, get a plain-English answer with Article citations |
+| ⚠️ **Risk Classifier** | Describe your AI system, get a High / Limited / Minimal risk classification |
+| 📄 **Source Citations** | Every answer shows exactly which pages and articles it drew from |
+| 🔓 **No sign-up needed** | Fully public, no API key required |
 
 ---
 
-## Project structure
+## 🚀 Try it now
+
+**Live app:** [eu-ai-act-assistant-460016298946.us-central1.run.app](https://eu-ai-act-assistant-460016298946.us-central1.run.app)
+
+Try asking:
+> *"What are the obligations for high-risk AI providers?"*
+
+> *"Does the EU AI Act apply to open-source models?"*
+
+> *"What are the transparency requirements for chatbots?"*
+
+Or use the **Risk Classifier** tab and describe your AI system:
+> *"An algorithm that scores job applicants based on their CV and social media data"*
+
+---
+
+## 🧠 How it works
+
+This is a **RAG (Retrieval-Augmented Generation)** system — it doesn't just send your question to ChatGPT. Instead:
 
 ```
-eu-ai-act-assistant/
-├── backend/
-│   ├── main.py                 # FastAPI app
-│   ├── config.py               # Environment config
-│   ├── rag/
-│   │   ├── ingestion.py        # PDF load, chunk, embed, store
-│   │   ├── retriever.py        # Qdrant similarity search
-│   │   └── pipeline.py         # LangChain RAG + classifier chains
-│   ├── routes/
-│   │   ├── query.py            # POST /query
-│   │   └── classify.py         # POST /classify-system
-│   └── requirements.txt
-├── frontend/
-│   └── src/
-│       ├── app/page.tsx        # Main layout + state
-│       └── components/
-│           ├── ChatPanel.tsx   # Chat interface
-│           ├── SourcesPanel.tsx # Source citation cards
-│           └── ClassifierPanel.tsx # Risk classifier UI
-├── ingestion_scripts/
-│   └── ingest_docs.py          # Run once to populate Qdrant
-├── Dockerfile
-├── docker-compose.yml
-└── .env.example
+Your question
+      │
+      ▼
+Convert to a vector (numbers that represent meaning)
+      │
+      ▼
+Search 1,429 chunks of the EU AI Act for the most relevant passages
+      │
+      ▼
+Send only those passages to GPT-4o
+      │
+      ▼
+Get a grounded answer that only uses what's in the Act
+```
+
+This means the AI **can't hallucinate** answers — it can only use text that actually exists in the official document.
+
+---
+
+## 🛠️ Tech stack
+
+```
+Frontend          Backend           AI / Data
+─────────         ────────          ─────────
+Next.js 16        FastAPI           OpenAI GPT-4o
+Tailwind CSS      Python 3.11       text-embedding-3-small
+Vercel            GCP Cloud Run     LangChain
+                  Docker            Qdrant Cloud
 ```
 
 ---
 
-## Local setup
+## 💻 Run it locally
 
-### Prerequisites
+### What you need
 
 - Python 3.11
 - Node.js 18+
 - Docker Desktop
-- OpenAI API key
-- Qdrant Cloud account (free tier)
+- An [OpenAI API key](https://platform.openai.com)
+- A free [Qdrant Cloud](https://cloud.qdrant.io) account
 
-### 1. Clone the repo
+### Step 1 — Clone
 
 ```bash
 git clone https://github.com/jemerson24/eu-ai-act-assistant.git
 cd eu-ai-act-assistant
 ```
 
-### 2. Set up environment variables
+### Step 2 — Configure
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your keys:
+Open `.env` and fill in your keys:
 
-```
-OPENAI_API_KEY=your-openai-api-key
+```bash
+OPENAI_API_KEY=sk-...
 QDRANT_URL=https://your-cluster.qdrant.io
-QDRANT_API_KEY=your-qdrant-api-key
+QDRANT_API_KEY=your-qdrant-key
 QDRANT_COLLECTION=eu_ai_act
 ```
 
-### 3. Download the EU AI Act PDF
+### Step 3 — Download the EU AI Act
 
 ```bash
 mkdir -p documents
@@ -128,7 +123,9 @@ curl -L 'https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401689'
      -o documents/eu_ai_act.pdf
 ```
 
-### 4. Run ingestion
+### Step 4 — Index the document
+
+This runs once to chunk, embed, and store the Act in Qdrant (~60 seconds):
 
 ```bash
 python -m venv venv && source venv/bin/activate
@@ -136,83 +133,112 @@ pip install -r backend/requirements.txt
 python ingestion_scripts/ingest_docs.py
 ```
 
-This chunks the PDF into 1429 pieces, embeds them, and stores them in Qdrant (~60 seconds).
-
-### 5. Start the backend
-
-```bash
-cd backend && uvicorn main:app --reload --port 8000
+You'll see:
+```
+Loaded 144 pages → Created 1429 chunks → Stored in Qdrant ✓
 ```
 
-### 6. Start the frontend
+### Step 5 — Start everything
+
+Open 3 terminal tabs:
 
 ```bash
+# Tab 1 — Qdrant (local)
+docker run -p 6333:6333 qdrant/qdrant
+
+# Tab 2 — Backend
+cd backend && uvicorn main:app --reload --port 8000
+
+# Tab 3 — Frontend
 cd frontend && npm install && npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open **http://localhost:3000** 🎉
 
 ---
 
-## API endpoints
+## 📡 API reference
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/health` | Health check |
-| POST | `/query` | Ask a question about the EU AI Act |
-| POST | `/classify-system` | Classify an AI system by risk level |
+Base URL: `https://eu-ai-act-assistant-460016298946.us-central1.run.app`
 
-### Example: Query
+### `POST /query`
+
+Ask a question about the EU AI Act.
 
 ```bash
-curl -X POST https://eu-ai-act-assistant-460016298946.us-central1.run.app/query \
+curl -X POST /query \
   -H "Content-Type: application/json" \
-  -d '{"question": "What are the obligations for high-risk AI providers?"}'
+  -d '{"question": "What are the transparency requirements for chatbots?"}'
 ```
 
-### Example: Risk classifier
+**Response:**
+```json
+{
+  "answer": "Chatbots must clearly identify themselves as AI...",
+  "sources": [
+    { "page": 81, "text": "Article 50 — Transparency obligations..." }
+  ]
+}
+```
+
+### `POST /classify-system`
+
+Classify an AI system by EU AI Act risk level.
 
 ```bash
-curl -X POST https://eu-ai-act-assistant-460016298946.us-central1.run.app/classify-system \
+curl -X POST /classify-system \
   -H "Content-Type: application/json" \
-  -d '{"description": "An algorithm that scores job applicants based on CV analysis"}'
+  -d '{"description": "A CV screening algorithm for hiring"}'
+```
+
+**Response:**
+```json
+{
+  "risk_level": "High",
+  "reasoning": "Employment-related AI systems fall under Annex III...",
+  "relevant_article": "Article 6, Annex III",
+  "annex_entry": "Annex III, point 4(a)"
+}
+```
+
+### `GET /health`
+
+```bash
+curl /health
+# {"status": "ok"}
 ```
 
 ---
 
-## Example queries
+## 🗂️ Project structure
 
-**Compliance questions:**
-- "What are the obligations for high-risk AI providers?"
-- "What are the transparency requirements for chatbots?"
-- "Does the EU AI Act apply to open-source models?"
-- "What is prohibited under Article 5?"
-- "What are the post-market monitoring requirements?"
-
-**Risk classifier inputs:**
-- "A CV screening algorithm for hiring decisions" → High risk (Annex III, 4a)
-- "A customer service chatbot for e-commerce" → Minimal risk
-- "A real-time facial recognition system in public spaces" → Prohibited
-
----
-
-## Key design decisions
-
-**Why RAG over full-document context?**
-The EU AI Act is 144 pages (~80,000 words). Sending the full document on every query is slow, expensive, and suffers from the "lost-in-the-middle" problem. RAG retrieves only the 5 most relevant chunks per query — faster, cheaper, and more accurate.
-
-**Why chunk_size=512 with Article-aware separators?**
-Legal text has natural clause boundaries at Article level. Using `"Article "` as a primary separator prevents clauses from being split across chunks, which improves retrieval precision.
-
-**Why temperature=0?**
-This is a legal accuracy use case. Deterministic outputs are essential — the same question should always return the same answer.
-
-**Why Qdrant over Chroma?**
-Qdrant supports metadata filtering and has a production-hosted option. The data layer is designed so adding per-domain collections (HR agent, Finance agent) is a clean extension.
+```
+eu-ai-act-assistant/
+├── backend/
+│   ├── main.py              # FastAPI app + rate limiting
+│   ├── rag/
+│   │   ├── ingestion.py     # PDF → chunks → embeddings → Qdrant
+│   │   ├── retriever.py     # Similarity search
+│   │   └── pipeline.py      # RAG chain + risk classifier
+│   └── routes/
+│       ├── query.py         # POST /query
+│       └── classify.py      # POST /classify-system
+├── frontend/
+│   └── src/
+│       ├── app/page.tsx
+│       └── components/
+│           ├── ChatPanel.tsx
+│           ├── SourcesPanel.tsx
+│           └── ClassifierPanel.tsx
+├── ingestion_scripts/
+│   └── ingest_docs.py
+├── Dockerfile
+└── .env.example
+```
 
 ---
 
-## Deployment
+## 🚢 Deploy your own
 
 ### Docker
 
@@ -227,7 +253,6 @@ docker run -p 8080:8080 --env-file .env eu-ai-act-assistant
 gcloud run deploy eu-ai-act-assistant \
   --source . \
   --region us-central1 \
-  --platform managed \
   --allow-unauthenticated \
   --port 8080 \
   --set-env-vars "OPENAI_API_KEY=...,QDRANT_URL=...,QDRANT_API_KEY=...,QDRANT_COLLECTION=eu_ai_act"
@@ -235,16 +260,22 @@ gcloud run deploy eu-ai-act-assistant \
 
 ---
 
-## What I would add next
+## 🔭 What's next
 
-- **Evaluation pipeline** — RAGAS metrics (faithfulness, answer relevance, context recall) to score retrieval quality automatically
-- **Multi-agent routing** — supervisor agent that routes queries to domain-specific sub-agents (HR, Finance, Legal, Product) each with their own Qdrant namespace
-- **Authentication** — per-user API keys and usage tracking for production use
-- **Conversation memory** — maintain context across multi-turn conversations
-- **Hybrid search** — combine dense vector search with BM25 sparse search for better retrieval on exact legal terms
+- [ ] **Evaluation pipeline** — RAGAS metrics to automatically score answer quality
+- [ ] **Conversation memory** — maintain context across multi-turn conversations  
+- [ ] **Multi-document** — extend to other EU regulations (GDPR, AI Liability Directive)
+- [ ] **Authentication** — per-user rate limits and usage tracking
+- [ ] **Hybrid search** — combine vector search with BM25 for better retrieval on exact legal terms
 
 ---
 
-## License
+## 📄 License
 
-MIT
+MIT — free to use, modify, and deploy.
+
+---
+
+<div align="center">
+Built with FastAPI · LangChain · Qdrant · GPT-4o · Next.js
+</div>
