@@ -4,278 +4,112 @@
 
 **Ask questions about the EU AI Act in plain English. Get cited, accurate answers in seconds.**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20App-blue?style=for-the-badge)](https://eu-ai-act-assistant-460016298946.us-central1.run.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20App-blue?style=for-the-badge)](https://eu-ai-act-assistant.vercel.app)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/jemerson24/eu-ai-act-assistant)
-
-![EU AI Act Assistant](https://storage.googleapis.com/eu-ai-act-pdf/preview.png)
 
 </div>
 
 ---
 
-## ✨ What is this?
+## What is this?
 
-The EU AI Act (August 2024) is a 144-page regulation that applies to every company building AI in or selling to Europe — including enterprises like L'Oréal, Philips, and Lenovo.
+The EU AI Act (August 2024) is a 144-page regulation that applies to every company building or deploying AI in Europe — including enterprises like L'Oréal, Philips, and Lenovo.
 
-This tool lets **compliance officers** and **developers** query the Act in natural language instead of manually searching through legal text.
+This tool lets **compliance officers** and **developers** query the Act in natural language instead of manually searching through dense legal text.
 
-### Features
+---
 
-| Feature | Description |
+## Features
+
+| | |
 |---|---|
-| 💬 **Natural language Q&A** | Ask anything about the EU AI Act, get a plain-English answer with Article citations |
-| ⚠️ **Risk Classifier** | Describe your AI system, get a High / Limited / Minimal risk classification |
-| 📄 **Source Citations** | Every answer shows exactly which pages and articles it drew from |
+| 💬 **Natural language Q&A** | Ask anything about the EU AI Act and get a plain-English answer with Article citations |
+| ⚠️ **Risk Classifier** | Describe your AI system and get a High / Limited / Minimal risk classification with Annex III references |
+| 📄 **Source Citations** | Every answer shows exactly which pages and articles it drew from — click to open the source |
 | 🔓 **No sign-up needed** | Fully public, no API key required |
 
 ---
 
-## 🚀 Try it now
+## Try it
 
-**Live app:** [eu-ai-act-assistant-460016298946.us-central1.run.app](https://eu-ai-act-assistant-460016298946.us-central1.run.app)
+**Live app:** [eu-ai-act-assistant.vercel.app](https://eu-ai-act-assistant.vercel.app)
 
-Try asking:
-> *"What are the obligations for high-risk AI providers?"*
+Example questions to try:
 
-> *"Does the EU AI Act apply to open-source models?"*
-
-> *"What are the transparency requirements for chatbots?"*
+- *"What are the obligations for high-risk AI providers?"*
+- *"Does the EU AI Act apply to open-source models?"*
+- *"What are the transparency requirements for chatbots?"*
+- *"What is prohibited under Article 5?"*
 
 Or use the **Risk Classifier** tab and describe your AI system:
-> *"An algorithm that scores job applicants based on their CV and social media data"*
+
+- *"An algorithm that scores job applicants based on their CV and social media data"* → High risk
+- *"A customer service chatbot for an e-commerce website"* → Minimal risk
+- *"A real-time facial recognition system in public spaces"* → Prohibited
 
 ---
 
-## 🧠 How it works
+## How it was built
 
-This is a **RAG (Retrieval-Augmented Generation)** system — it doesn't just send your question to ChatGPT. Instead:
+### The core idea — RAG
 
-```
-Your question
-      │
-      ▼
-Convert to a vector (numbers that represent meaning)
-      │
-      ▼
-Search 1,429 chunks of the EU AI Act for the most relevant passages
-      │
-      ▼
-Send only those passages to GPT-4o
-      │
-      ▼
-Get a grounded answer that only uses what's in the Act
-```
+Rather than sending every user question directly to an LLM with the full 144-page document, the app uses a **RAG (Retrieval-Augmented Generation)** pipeline. This means the system first finds the most relevant passages from the Act, then passes only those to the LLM to generate an answer. The result is faster, cheaper, and more accurate — the model can only answer from text that actually exists in the official document.
 
-This means the AI **can't hallucinate** answers — it can only use text that actually exists in the official document.
+### Document ingestion
 
----
+The official EU AI Act PDF was downloaded from EUR-Lex and processed using **LangChain's PyPDFLoader**. The document was then split into 1,429 chunks using a `RecursiveCharacterTextSplitter` with Article-aware separators — meaning the splitter respects Article boundaries instead of cutting mid-clause. Each chunk was embedded using **OpenAI's text-embedding-3-small** model (1,536 dimensions) and stored in **Qdrant Cloud** with page number and source metadata.
 
-## 🛠️ Tech stack
+### Retrieval pipeline
 
-```
-Frontend          Backend           AI / Data
-─────────         ────────          ─────────
-Next.js 16        FastAPI           OpenAI GPT-4o
-Tailwind CSS      Python 3.11       text-embedding-3-small
-Vercel            GCP Cloud Run     LangChain
-                  Docker            Qdrant Cloud
-```
+When a user asks a question, it gets embedded using the same model and compared against all stored chunks using cosine similarity. The top 5 most relevant chunks are retrieved and assembled into a context window.
 
----
+### Answer generation
 
-## 💻 Run it locally
+The retrieved context is passed to **GPT-4o at temperature 0** via a LangChain chain with a custom system prompt that instructs the model to answer in plain English, cite specific Articles, and refuse to speculate beyond what the text says. Temperature 0 ensures deterministic, legally grounded responses — the same question always returns the same answer.
 
-### What you need
+### Risk classifier
 
-- Python 3.11
-- Node.js 18+
-- Docker Desktop
-- An [OpenAI API key](https://platform.openai.com)
-- A free [Qdrant Cloud](https://cloud.qdrant.io) account
+A separate LangChain chain handles risk classification. The user describes their AI system in plain text, and GPT-4o classifies it as High, Limited, or Minimal risk according to the EU AI Act framework, returning structured JSON with the relevant Article and Annex III entry.
 
-### Step 1 — Clone
+### Backend
 
-```bash
-git clone https://github.com/jemerson24/eu-ai-act-assistant.git
-cd eu-ai-act-assistant
-```
+The backend is built with **FastAPI** and exposes two endpoints — `/query` for Q&A and `/classify-system` for risk classification. A rate limiter (slowapi) caps usage at 10 requests per minute per IP so users don't need their own API keys. The EU AI Act PDF is served from **Google Cloud Storage** so source cards link directly to the exact page in the official document.
 
-### Step 2 — Configure
+### Frontend
 
-```bash
-cp .env.example .env
-```
+The frontend is built with **Next.js** and styled with Tailwind CSS. The interface has two panels — a chat window on the left and a sources panel on the right showing the retrieved chunks with page numbers and article labels. Clicking a source card opens the PDF at the exact page. A second tab exposes the Risk Classifier with colour-coded risk level output.
 
-Open `.env` and fill in your keys:
+### Deployment
 
-```bash
-OPENAI_API_KEY=sk-...
-QDRANT_URL=https://your-cluster.qdrant.io
-QDRANT_API_KEY=your-qdrant-key
-QDRANT_COLLECTION=eu_ai_act
-```
-
-### Step 3 — Download the EU AI Act
-
-```bash
-mkdir -p documents
-curl -L 'https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:L_202401689' \
-     -o documents/eu_ai_act.pdf
-```
-
-### Step 4 — Index the document
-
-This runs once to chunk, embed, and store the Act in Qdrant (~60 seconds):
-
-```bash
-python -m venv venv && source venv/bin/activate
-pip install -r backend/requirements.txt
-python ingestion_scripts/ingest_docs.py
-```
-
-You'll see:
-```
-Loaded 144 pages → Created 1429 chunks → Stored in Qdrant ✓
-```
-
-### Step 5 — Start everything
-
-Open 3 terminal tabs:
-
-```bash
-# Tab 1 — Qdrant (local)
-docker run -p 6333:6333 qdrant/qdrant
-
-# Tab 2 — Backend
-cd backend && uvicorn main:app --reload --port 8000
-
-# Tab 3 — Frontend
-cd frontend && npm install && npm run dev
-```
-
-Open **http://localhost:3000** 🎉
+The backend is containerised with **Docker** and deployed to **GCP Cloud Run** in `us-central1`. The frontend is deployed on **Vercel**, which auto-deploys on every push to the main branch. The vector database runs on **Qdrant Cloud** (free tier).
 
 ---
 
-## 📡 API reference
+## Tech stack
 
-Base URL: `https://eu-ai-act-assistant-460016298946.us-central1.run.app`
-
-### `POST /query`
-
-Ask a question about the EU AI Act.
-
-```bash
-curl -X POST /query \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What are the transparency requirements for chatbots?"}'
-```
-
-**Response:**
-```json
-{
-  "answer": "Chatbots must clearly identify themselves as AI...",
-  "sources": [
-    { "page": 81, "text": "Article 50 — Transparency obligations..." }
-  ]
-}
-```
-
-### `POST /classify-system`
-
-Classify an AI system by EU AI Act risk level.
-
-```bash
-curl -X POST /classify-system \
-  -H "Content-Type: application/json" \
-  -d '{"description": "A CV screening algorithm for hiring"}'
-```
-
-**Response:**
-```json
-{
-  "risk_level": "High",
-  "reasoning": "Employment-related AI systems fall under Annex III...",
-  "relevant_article": "Article 6, Annex III",
-  "annex_entry": "Annex III, point 4(a)"
-}
-```
-
-### `GET /health`
-
-```bash
-curl /health
-# {"status": "ok"}
-```
+| Layer | Technology |
+|---|---|
+| LLM | OpenAI GPT-4o |
+| Embeddings | text-embedding-3-small |
+| Vector database | Qdrant Cloud |
+| Orchestration | LangChain |
+| Backend | FastAPI + Python 3.11 |
+| Frontend | Next.js + Tailwind CSS |
+| PDF storage | Google Cloud Storage |
+| Deployment | GCP Cloud Run + Docker + Vercel |
 
 ---
 
-## 🗂️ Project structure
+## What I would add next
 
-```
-eu-ai-act-assistant/
-├── backend/
-│   ├── main.py              # FastAPI app + rate limiting
-│   ├── rag/
-│   │   ├── ingestion.py     # PDF → chunks → embeddings → Qdrant
-│   │   ├── retriever.py     # Similarity search
-│   │   └── pipeline.py      # RAG chain + risk classifier
-│   └── routes/
-│       ├── query.py         # POST /query
-│       └── classify.py      # POST /classify-system
-├── frontend/
-│   └── src/
-│       ├── app/page.tsx
-│       └── components/
-│           ├── ChatPanel.tsx
-│           ├── SourcesPanel.tsx
-│           └── ClassifierPanel.tsx
-├── ingestion_scripts/
-│   └── ingest_docs.py
-├── Dockerfile
-└── .env.example
-```
-
----
-
-## 🚢 Deploy your own
-
-### Docker
-
-```bash
-docker build -t eu-ai-act-assistant .
-docker run -p 8080:8080 --env-file .env eu-ai-act-assistant
-```
-
-### GCP Cloud Run
-
-```bash
-gcloud run deploy eu-ai-act-assistant \
-  --source . \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --port 8080 \
-  --set-env-vars "OPENAI_API_KEY=...,QDRANT_URL=...,QDRANT_API_KEY=...,QDRANT_COLLECTION=eu_ai_act"
-```
-
----
-
-## 🔭 What's next
-
-- [ ] **Evaluation pipeline** — RAGAS metrics to automatically score answer quality
-- [ ] **Conversation memory** — maintain context across multi-turn conversations  
-- [ ] **Multi-document** — extend to other EU regulations (GDPR, AI Liability Directive)
-- [ ] **Authentication** — per-user rate limits and usage tracking
-- [ ] **Hybrid search** — combine vector search with BM25 for better retrieval on exact legal terms
-
----
-
-## 📄 License
-
-MIT — free to use, modify, and deploy.
+- **Evaluation pipeline** — RAGAS metrics to automatically score answer faithfulness and retrieval quality
+- **Conversation memory** — maintain context across multi-turn conversations
+- **Multi-document support** — extend to GDPR, the AI Liability Directive, and other EU regulations
+- **Authentication** — per-user rate limits and usage tracking for production use
+- **Hybrid search** — combine dense vector search with BM25 sparse search for better retrieval on exact legal terms and Article numbers
 
 ---
 
 <div align="center">
-Built with FastAPI · LangChain · Qdrant · GPT-4o · Next.js
+Built with FastAPI · LangChain · Qdrant · GPT-4o · Next.js · GCP · Vercel
 </div>
